@@ -15,11 +15,15 @@ var stack_pentry = [ ];
 var stacks = [ 
 		"pre", "div", "link", 
 		"b", "u", "i", 
-		"span"
+		"span", "td", "tr", "table",
+		"ul", "ol", "select"
 ];
 
 var pentry = [ ];
-var valid_tags = [ "a", "hr", "img", "font", "p" ].concat(stacks);
+var invalid_tags = [ 
+		"html", "meta", "head", 
+		"header", "script", "style", 
+		"title", "body", "h1" ];
 
 var INVISIBLE_TAGS = 2; // nie obsługiwane znaczniki
 
@@ -36,8 +40,8 @@ function fillPentry() {
 	var elements = document.getElementsByTagName('*');
 	for(var i = 0;i < elements.length;++i) {
 		var tag_name = elements[i].tagName.toLowerCase();
-		
-		if(valid_tags.indexOf(tag_name) != -1) {
+		console.log(tag_name);
+		if(invalid_tags.indexOf(tag_name) == -1) {
 			if(tag_name == "img" && elements[i].style.src == "bug_1.gif")
 				continue; // kanibalizmu nie tolerujemy!!
 			
@@ -146,17 +150,18 @@ function BugAI(target) {
 		this.target = target;
 	
 	this.update = function() {
-		if(this.parent == undefined) {
-			throw "Brak robaka!";
-		}
 		if(this.target == null)
 			this.findFood();
 		
 		// Test widoczności żarcia
 		if(this.target instanceof Food) {
 			if(this.target.health <= 0) {
-				//setElementAlphaOpacity(this.target.dom_obj, 0);
-				this.target.dom_obj.remove();
+				try {
+					this.target.dom_obj.remove();
+				} catch(err) {
+					setElementAlphaOpacity(this.target.dom_obj, 0);
+				}
+				//
 				removeFromArray(pentry, this.target);
 				this.target = null;
 				return;
@@ -178,8 +183,7 @@ function BugAI(target) {
 		if(bug instanceof Bug)
 			this.parent.move(10 * (1 - distance / MAX_COLLISION_DISTANCE));
 		else if(bug instanceof Food) {
-			this.target.health -= 0.01;
-			//setElementAlphaOpacity(bug.dom_obj, this.target.health);
+			this.target.health -= 0.03;
 		}
 	}
 
@@ -217,21 +221,13 @@ function Bug(pos, velocity, img, ai) {
 	this.health = 1;
 	this.velocity = velocity;
 	
-	if(ai == undefined) {
-		throw "Nie zdefiniowano AI!";
-	}
-	
 	// Aktualizacja pozycji robala
 	this.update = function() {
-		try {
-			ai.parent = this;
-			ai.update();
+		ai.parent = this;
+		ai.update();
 		
-			this.translateAngle();
-			this.move(-1);
-		} catch(err) {
-			alert(err);
-		}
+		this.translateAngle();
+		this.move(-1);
 	}
 	// Wyliczanie kąta między myszą a robalem
 	this.translateAngle = function() {
@@ -298,7 +294,7 @@ function attack(style, r) {
 		break;
 
 		case ATTACK_STYLE.ALL_CORNERS:
-			for(var i = 0;i < 24;++i) {
+			for(var i = 0;i < 32;++i) {
 				Bug.createBug(
 							new Vec2(getRandom(0, bounds.X), getRandom(0, bounds.Y)),
 							2,
