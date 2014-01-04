@@ -1,0 +1,325 @@
+///////////////// WSZYSTKO PUBLICZNE PIEPRZYC ENKAPSULACJE !@!&*@^!&@
+
+var mouse = new Vec2(0,0);
+function Vec2(X, Y) {
+	this.X = X;
+	this.Y = Y;
+}
+
+/////////////////////////// SPIŻARNIA
+var pentry = [ ];
+var valid_tags = [ "a", "hr" ];
+
+function Food(pos, dom_obj) {
+	this.pos = pos;
+	this.dom_obj = dom_obj;
+}
+function fillPentry() {
+	var elements = document.getElementsByTagName('*');
+	for(var i = 0;i < elements.length;++i) {
+		if(valid_tags.indexOf(elements[i].tagName.toLowerCase()) != -1) {
+			var pos = elements[i].getBoundingClientRect();
+			setElementAlphaOpacity(elements[i], 10);
+			pentry.push(new Food(new Vec2(
+									pos.left + elements[i].offsetWidth / 2 - 30, 
+									pos.top + elements[i].offsetHeight / 2 - 30), 
+									elements[i]));
+		}
+	}
+}
+fillPentry();
+
+//////////////////////////// MROWISKO
+var MAX_COLLISION_DISTANCE = 30;
+function BugManager() {
+	this.bugs = [ ];
+	
+	this.regBug = function(bug) {
+		this.bugs.push(bug);
+		return bug;
+	}
+	this.update = function() {
+		this.bugs.forEach(function(bug) {
+			bug.update();
+		});
+	}
+	this.checkCollisionsFromList = function(parent, ai, list) {
+		for(var i = 0;i < list.length;++i) {
+			var _bug = list[i];
+			if(_bug == parent)
+				continue;
+			
+			var distance = distanceBeetwenPoints(parent.pos, _bug.pos);
+			if(distance < MAX_COLLISION_DISTANCE)
+				ai.getCollision(_bug, distance);
+		}
+	}
+	this.checkCollisions = function(ai) {
+		var parent = ai.parent;
+		if(parent.pos.X <= 0 || 
+			parent.pos.X >= bounds.X - 50 || 
+			parent.pos.Y <= 0 || 
+			parent.pos.Y >= bounds.Y - 50) {
+				ai.getCollision(null, null);
+				return;
+		}
+		this.checkCollisionsFromList(parent, ai, this.bugs);
+		this.checkCollisionsFromList(parent, ai, pentry);
+	}
+}
+var bug_manager = new BugManager;
+
+function toRad(deg) {
+	return deg * Math.PI / 180;
+}
+function distanceBeetwenPoints(p1, p2) {
+	var a = p1.X - p2.X;
+	var b = p1.Y - p2.Y;
+			
+	return Math.sqrt(a * a + b * b);
+}
+
+///////////////////////////// ROBAL 
+/** OD 0 DO 10 */
+function setElementAlphaOpacity(element, opacity) {
+	element.style.opacity = opacity / 10;
+	element.style.filter = 'alpha(opacity=' + opacity * 10 + ')';
+}
+
+function getElementAlphaOpacity(element) {
+	return element.style.opacity * 10;
+}
+
+var surface = document.body;
+var bounds = new Vec2(surface.clientWidth, surface.clientHeight);
+function BugAI(target) {
+	this.behavior = BugAI.BEHAVIOR_TYPE.FOLLOW; 
+	this.parent = null;
+	this.food_opacity = 0;
+	
+	if(target == null) {
+		this.behavior = BugAI.BEHAVIOR_TYPE.EAT;
+	} else {
+		this.target = target;
+	}
+	
+	this.update = function() {
+		if(this.parent == undefined) {
+			throw "Brak robaka!";
+		}
+		
+		if(this.target == null) {
+			this.findFood();
+		}
+		
+		// Test widoczności żarcia
+		if(this.target instanceof Food) {
+			this.food_opacity = getElementAlphaOpacity(this.target.dom_obj);
+			if(this.food_opacity <= 0) {
+				setElementAlphaOpacity(this.target.dom_obj, 0);
+				pentry.splice(pentry.indexOf(this.target), 0);
+				this.target = null;
+				return;
+			}
+		}
+			
+		// Podążanie do żarcia
+		var _target = this.target == null ?
+							mouse : 
+							new Vec2(this.target.pos.X, this.target.pos.Y);
+		
+		this.parent.angle = Math.atan2(
+			_target.Y - this.parent.pos.Y, 
+			_target.X - this.parent.pos.X) * 180 / Math.PI + 90;
+		
+		bug_manager.checkCollisions(this);
+	}
+	// Odbieranie kolizji
+	this.getCollision = function(bug, distance) {
+		if(bug instanceof Bug)
+			this.parent.move(10 * (1 - distance / MAX_COLLISION_DISTANCE));
+		else if(bug instanceof Food)
+			setElementAlphaOpacity(bug.dom_obj, this.food_opacity - 0.1);
+	}
+	// Odnajdywanie żarcia
+	this.findFood = function() {
+		// Sortowanie bąbelkowe!!!
+		var n = pentry.length;
+		var a = pentry;
+		
+		var swapped;
+		do {
+			swapped = false;
+			for (var i=0; i < a.length-1; i++) {
+				if(distanceBeetwenPoints(this.parent, a[i]) < 
+					distanceBeetwenPoints(this.parent, a[i + 1])) {
+					var temp = a[i];
+					a[i] = a[i + 1];
+					a[i + 1] = temp;
+					swapped = true;
+				}
+			}
+		} while (swapped);
+		
+		// Odnajdowywanie widocznego!
+		for(var i = 0;i < n;++i) {
+			if(getElementAlphaOpacity(pentry[i].dom_obj) > 0) {
+				this.target = pentry[i];
+				break;
+			}
+		}
+	}
+}
+BugAI.BEHAVIOR_TYPE = {
+	EAT : 0,
+	FOLLOW : 1
+};
+
+function Bug(pos, velocity, img, ai) {
+	this.img = img;
+	this.pos = pos;
+	this.angle = 0;
+	
+	this.ai = ai;
+	this.health = 1;
+	this.velocity = velocity;
+	
+	if(ai == undefined) {
+		throw "Nie zdefiniowano AI!";
+	}
+	
+	// Aktualizacja pozycji robala
+	this.update = function() {
+		try {
+			ai.parent = this;
+			ai.update();
+		
+			this.translateAngle();
+			this.move(-1);
+		} catch(err) {
+			alert(err);
+		}
+	}
+	// Wyliczanie kąta między myszą a robalem
+	this.translateAngle = function() {
+		var param = "rotate(" + this.angle + "deg)";
+		this.img.style.MozTransform = param;
+		this.img.style.webkitTransform = param;
+	}
+	// Obliczanie przemieszczenia
+	this.move = function(v) {
+		var rad = toRad(this.angle - 90);
+		var velocity = (v == -1 ? this.velocity : v);
+		
+		this.pos.X += Math.cos(rad) * velocity;
+		this.pos.Y += Math.sin(rad) * velocity;
+		
+		this.translatePos();
+	}
+	this.translatePos = function() {
+		this.img.style.left = this.pos.X;
+		this.img.style.top = this.pos.Y;
+	}
+}
+
+Bug.createBug = function(pos, velocity, img_src, ai) {
+	var img = document.createElement("img");
+	
+	img.src = img_src;
+	img.style.position = "absolute";
+	
+	surface.appendChild(img);
+	return bug_manager.regBug(new Bug(pos, velocity, img, ai));
+}
+
+var ATTACK_STYLE = {
+	CIRCLE : 0,
+	RIGHT : 1
+}
+function attack(style, r) {
+	var spaces_between = 0;
+	switch(style) {
+		case ATTACK_STYLE.CIRCLE:
+			spaces_between = 20;
+			for(var i = 0;i < 360 / spaces_between;++i) {
+				var rad = toRad(i * spaces_between);
+				Bug.createBug(
+						new Vec2(
+							bounds.X / 2 + Math.cos(rad) * r,
+							bounds.Y / 2 + Math.sin(rad) * r),
+						3,
+						"bug_1.gif",
+						new BugAI(null));
+			}
+		break;
+		
+		case ATTACK_STYLE.RIGHT:
+			spaces_between = 60;
+			for(var i = 0;i < 4;++i) {
+				for(var j = 0;j < 10;++j) {
+					Bug.createBug(
+						new Vec2(
+							bounds.X + i * spaces_between,
+							j * spaces_between),
+						3,
+						"bug_1.gif",
+						new BugAI(null));
+				}
+			}
+		break;
+	}
+}
+
+///////////////////////////// OBSŁUGA GRACZA
+var DIR = {
+	LEFT : 0,
+	RIGHT : 1,
+	ALL_CORNERS: 2
+};
+
+function PlayerAI() {
+	this.parent = null;
+	
+	this.turn = function(dir, speed) {
+		if(this.parent == null) 
+			return;
+		
+		if(dir == DIR.LEFT) 
+			this.parent.angle -= speed;
+		else 
+			this.parent.angle += speed;
+	}
+	this.update = function() {
+		bug_manager.checkCollisions(this);
+	}
+	this.getCollision = function(bug, distance) {
+		this.parent.angle += 180;
+	}
+}
+var player_ai = new PlayerAI;
+var player = Bug.createBug(new Vec2(600,460), 6, "player.gif", player_ai);
+
+surface.onmousemove = function(event) {
+	mouse.X = event.clientX;
+	mouse.Y = event.clientY;
+}
+surface.onkeydown = function(event){
+    event = event || window.event;
+    var keycode = event.charCode || event.keyCode;
+    
+    console.log(keycode);
+    
+    if(keycode === 65)
+		player_ai.turn(DIR.LEFT, 9);
+	else if(keycode == 68)
+		player_ai.turn(DIR.RIGHT, 9);
+}
+
+function main() {
+	surface.style.cursor="url('dinner.png'), default";
+	
+	attack(ATTACK_STYLE.CIRCLE, 300);
+	setInterval(function() { bug_manager.update(); } , 1000 / 45);
+}
+
+main();
