@@ -1,4 +1,5 @@
 <?php
+// AUTOR MATEUSZ BAGIŃSKI ZAKAZ KOPIOWANIA
 error_reporting(0);
 
 $dir = './';
@@ -131,9 +132,9 @@ function printFileList() {
 	<?php 
 if(!isset($_GET['PAGE'])) {
 	?>
-	<body>
-		<div style="font-size: 20px; font-weight: bold;"> Dajrektory lisning for robactwo by Malysch / </div>
-		<pre>Last modified         Size    Name<hr size="1" color="#000000" noshade="noshade"><br><?php loadPage(); ?>
+	<body style="overflow:hidden;">
+		<div style="font-size: 20px; font-weight: bold;"> Eksplorator i robaki by Mati</div>
+		<pre><b>Last modified         Size    Name</b><hr size="1" color="#000000" noshade="noshade"><br><?php loadPage(); ?>
 		<hr size="1" color="#000000" noshade="noshade"></pre>
 		<script src="./src/game.js"></script>
 	</body>
@@ -145,7 +146,7 @@ if(!isset($_GET['PAGE'])) {
 	<iframe id="iframe_style" src='<?php echo getURL().$page; ?>'> </iframe>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 	<script>
-		$('#iframe_style').contents().find('body').append($('<script src="http://127.0.0.1/src/game.js">').html(""));
+		$('#iframe_style').contents().find('body').append($('<script src="http://baginski.mateusz.2lo.pl/src/game.js">').html(""));
 	</script>
 	<?php 
 }
