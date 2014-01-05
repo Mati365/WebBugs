@@ -94,11 +94,8 @@ function printFileList() {
 			$url = $url.'?PAGE='.$fullpath;
 		} else {
 			$url = $url.$fullpath;
-		}
-		$folder_icon = '<img src="./folder.png" />';		
-		insertString(true, $columns[3], 
-					($is_dir ? $folder_icon : '').
-					'<a href="'.$url.'">'.$filename.'</a><br>');
+		}			
+		insertString(true, $columns[3], '<a href="'.$url.'">'.$filename.'</a><br>');
 	}
 	// Podsumowanie!
 	echo '<br>File count:'.$file_count.'    ';
@@ -135,7 +132,6 @@ if(!isset($_GET['PAGE'])) {
 		<div style="font-size: 20px; font-weight: bold;"> Dajrektory lisning for robactwo by Malysch / </div>
 		<pre>Last modified         Size    Name<hr size="1" color="#000000" noshade="noshade"><br><?php loadPage(); ?>
 		<hr size="1" color="#000000" noshade="noshade"></pre>
-		<script src="./src/game.js"></script>
 	</body>
 	<?php
 } else {

@@ -16,7 +16,7 @@ var stacks = [
 		"pre", "div", "link", 
 		"b", "u", "i", 
 		"span", "td", "tr", "table",
-		"ul", "ol", "select", "iframe"
+		"ul", "ol", "select"
 ];
 
 var pentry = [ ];
@@ -294,7 +294,7 @@ function attack(style, r) {
 		break;
 
 		case ATTACK_STYLE.ALL_CORNERS:
-			for(var i = 0;i < 12;++i) {
+			for(var i = 0;i < 32;++i) {
 				Bug.createBug(
 							new Vec2(getRandom(0, bounds.X), getRandom(0, bounds.Y)),
 							2,
