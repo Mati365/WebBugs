@@ -155,6 +155,9 @@ function BugAI(target) {
 		
 		// Test widoczności żarcia
 		if(this.target instanceof Food) {
+			if(distanceBeetwenPoints(this.target.pos, this.parent.pos) < 70) {
+				this.target.health -= 0.03;			
+			}
 			if(this.target.health <= 0) {
 				try {
 					this.target.dom_obj.remove();
@@ -182,9 +185,6 @@ function BugAI(target) {
 	this.getCollision = function(bug, distance) {
 		if(bug instanceof Bug)
 			this.parent.move(10 * (1 - distance / MAX_COLLISION_DISTANCE));
-		else if(bug instanceof Food) {
-			this.target.health -= 0.03;
-		}
 	}
 
 	var BUG_LOOK_DISTANCE = 100;
