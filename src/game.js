@@ -14,16 +14,16 @@ function Vec2(X, Y) {
 var stack_pentry = [ ];
 var stacks = [ 
 		"pre", "div", "link", 
-		"b", "u", "i", 
-		"span", "td", "tr", "table",
-		"ul", "ol", "select", "iframe"
+		"span", "table",
+		"ul", "ol", "select", 
+		"iframe"
 ];
 
 var pentry = [ ];
 var invalid_tags = [ 
 		"html", "meta", "head", 
 		"header", "script", "style", 
-		"title", "body", "h1" ];
+		"title", "body", "br" ];
 
 var INVISIBLE_TAGS = 2; // nie obsługiwane znaczniki
 
@@ -40,12 +40,13 @@ function fillPentry() {
 	var elements = document.getElementsByTagName('*');
 	for(var i = 0;i < elements.length;++i) {
 		var tag_name = elements[i].tagName.toLowerCase();
-		console.log(tag_name);
 		if(invalid_tags.indexOf(tag_name) == -1) {
 			if(tag_name == "img" && elements[i].style.src == "bug_1.gif")
 				continue; // kanibalizmu nie tolerujemy!!
 			
 			var pos = elements[i].getBoundingClientRect();
+			if(pos.left == 0 && pos.top == 0)
+				console.log(tag_name);
 			var food = new Food(new Vec2(
 									pos.left + elements[i].offsetWidth / 2 - 30, 
 									pos.top + elements[i].offsetHeight / 2 - 30), 
@@ -60,7 +61,7 @@ function fillPentry() {
 fillPentry();
 
 //////////////////////////// MROWISKO
-var MAX_COLLISION_DISTANCE = 30;
+var MAX_COLLISION_DISTANCE = 50;
 function BugManager() {
 	this.bugs = [ ];
 	
@@ -155,7 +156,7 @@ function BugAI(target) {
 		
 		// Test widoczności żarcia
 		if(this.target instanceof Food) {
-			if(distanceBeetwenPoints(this.target.pos, this.parent.pos) < 70) {
+			if(distanceBeetwenPoints(this.target.pos, this.parent.pos) < 60) {
 				this.target.health -= 0.03;			
 			}
 			if(this.target.health <= 0) {
