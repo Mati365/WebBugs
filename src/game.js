@@ -5,9 +5,11 @@
 ///////////////// WSZYSTKO PUBLICZNE PIEPRZYC ENKAPSULACJE !@!&*@^!&@
 
 var mouse = new Vec2(0,0);
-function Vec2(X, Y) {
+function Vec2(X, Y, W, H) {
 	this.X = X;
 	this.Y = Y;
+	this.W = W;
+	this.H = H;
 }
 
 /////////////////////////// SPIŻARNIA
@@ -45,12 +47,12 @@ function fillPentry() {
 				continue; // kanibalizmu nie tolerujemy!!
 			
 			var pos = elements[i].getBoundingClientRect();
-			if(pos.left == 0 && pos.top == 0)
-				console.log(tag_name);
 			var food = new Food(new Vec2(
-									pos.left + elements[i].offsetWidth / 2 - 30, 
-									pos.top + elements[i].offsetHeight / 2 - 30), 
-								elements[i]);				
+									pos.left, 
+									pos.top, 
+									elements[i].offsetWidth, 
+									elements[i].offsetHeight), elements[i]);	
+						
 			if(stacks.indexOf(tag_name) != -1)
 				stack_pentry.push(food);
 			else
@@ -95,7 +97,6 @@ function BugManager() {
 				return;
 		}
 		this.checkCollisionsFromList(parent, ai, this.bugs);
-		this.checkCollisionsFromList(parent, ai, pentry);
 	}
 }
 var bug_manager = new BugManager;
@@ -142,8 +143,9 @@ var surface = document.body;
 var bounds = new Vec2(surface.clientWidth, surface.clientHeight);
 function BugAI(target) {
 	this.behavior = BugAI.BEHAVIOR_TYPE.FOLLOW; 
-	this.parent = null;
-	this.target = null;
+	this.parent 	= null;
+	this.target 	= null;
+	this.target_pos = null;
 	
 	if(target == null)
 		this.behavior = BugAI.BEHAVIOR_TYPE.EAT;
@@ -151,16 +153,18 @@ function BugAI(target) {
 		this.target = target;
 	
 	this.update = function() {
-		if(this.target == null)
+		if(this.target == null) {
+			this.target_pos = new Vec2(getRandom(-10000, 10000), getRandom(-10000, 10000));
 			this.findFood();
-		
+		}
 		// Test widoczności żarcia
 		if(this.target instanceof Food) {
-			if(distanceBeetwenPoints(this.target.pos, this.parent.pos) < 60) {
+			if(distanceBeetwenPoints(this.target_pos, this.parent.pos) < 60) {
 				this.target.health -= 0.03;			
 			}
 			if(this.target.health <= 0) {
 				try {
+					/** USUWANIE ELEMENTU */
 					this.target.dom_obj.remove();
 				} catch(err) {
 					setElementAlphaOpacity(this.target.dom_obj, 0);
@@ -172,17 +176,15 @@ function BugAI(target) {
 			}
 		}
 		// Podążanie do żarcia
-		var _target = this.target == null?
-							mouse : 
-							new Vec2(this.target.pos.X, this.target.pos.Y);
-		
 		this.parent.angle = Math.atan2(
-			_target.Y - this.parent.pos.Y, 
-			_target.X - this.parent.pos.X) * 180 / Math.PI + 90;
+			this.target_pos.Y - this.parent.pos.Y, 
+			this.target_pos.X - this.parent.pos.X) * 180 / Math.PI + 90;
 		
 		bug_manager.checkCollisions(this);
 	}
-	// Odbieranie kolizji
+	this.resetTargetPos = function() {
+		this.target_pos = new Vec2(this.target.pos.X + getRandom(0, this.target.pos.W), this.target.pos.Y + getRandom(0, this.target.pos.H));
+	}
 	this.getCollision = function(bug, distance) {
 		if(bug instanceof Bug)
 			this.parent.move(10 * (1 - distance / MAX_COLLISION_DISTANCE));
@@ -196,16 +198,17 @@ function BugAI(target) {
 			else 
 				return;
 		}
-			
 		for(var distance = 0; distance <= 3; distance += 1) {
 			for(var i = 0;i < pentry.length;++i) {
 				if(distanceBeetwenPoints(pentry[i], this.parent) < (BUG_LOOK_DISTANCE + 1) * i) {
 					this.target = pentry[i];
+					this.resetTargetPos();
 					return;
 				}
 			}
 		}
 		this.target = pentry[getRandom(0, pentry.length)];
+		this.resetTargetPos();
 	}
 }
 BugAI.BEHAVIOR_TYPE = {
@@ -273,7 +276,7 @@ function attack(style, r) {
 						new Vec2(
 							bounds.X / 2 + Math.cos(rad) * r,
 							bounds.Y / 2 + Math.sin(rad) * r),
-						2,
+						7,
 						"bug_1.gif",
 						new BugAI(null));
 			}
@@ -287,7 +290,7 @@ function attack(style, r) {
 						new Vec2(
 							bounds.X + i * spaces_between,
 							j * spaces_between),
-						2,
+						7,
 						"bug_1.gif",
 						new BugAI(null));
 				}
@@ -295,10 +298,10 @@ function attack(style, r) {
 		break;
 
 		case ATTACK_STYLE.ALL_CORNERS:
-			for(var i = 0;i < 12;++i) {
+			for(var i = 0;i < 17;++i) {
 				Bug.createBug(
 							new Vec2(getRandom(0, bounds.X), getRandom(0, bounds.Y)),
-							2,
+							3,
 							"bug_1.gif",
 							new BugAI(null));
 			}
@@ -332,28 +335,13 @@ function PlayerAI() {
 		this.parent.angle += 180;
 	}
 }
-var player_ai = new PlayerAI;
-var player = Bug.createBug(new Vec2(600,460), 6, "player.gif", player_ai);
 
 surface.onmousemove = function(event) {
 	mouse.X = event.clientX;
 	mouse.Y = event.clientY;
 }
-surface.onkeydown = function(event){
-    event = event || window.event;
-    var keycode = event.charCode || event.keyCode;
-    
-    console.log(keycode);
-    
-    if(keycode === 65)
-		player_ai.turn(DIR.LEFT, 9);
-	else if(keycode == 68)
-		player_ai.turn(DIR.RIGHT, 9);
-}
 
 function main() {
-	surface.style.cursor="url('dinner.png'), default";
-	
 	attack(ATTACK_STYLE.ALL_CORNERS, 300);
 	setInterval(function() { bug_manager.update(); } , 1000 / 60);
 }

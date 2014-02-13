@@ -8,7 +8,8 @@ function loadPage() {
 	
 	if(isset($_GET['DIR']))
 		$dir = $_GET['DIR'];
-	printFileList();
+	printList(true, false);
+	printList(false, true);
 }
 
 function insertString($after, $column, $str) {
@@ -46,15 +47,17 @@ function isPageFile($file) {
 }
 
 $columns = array(0, 5, 10, 4);
-function printFileList() {
-	global $dir;
-	global $columns;
+$file_count = 0;
+$folder_count = 0;
+
+function printList($dir_print, $summary) {
+	global $dir, $columns, $file_count, $folder_count;
 	
 	$file_count = 0;
-	$folder_count = 0;
-	$folder_size = 0;
 	
 	date_default_timezone_set('UTC');
+	if($dir_print)
+		insertString(true, 30, '<img src="./folder.png" /><a href="'.$dir.'/../">../</a><br>');
 	foreach (new DirectoryIterator($dir) as $file) {
 		if($file->isDot())
 			continue;
@@ -63,6 +66,8 @@ function printFileList() {
 			$folder_count++;
 		else
 			$file_count++;
+		if($is_dir != $dir_print)
+			continue;
 		
 		// DATA!!
 		$last_modified_date = date('d-m-Y ', $file->getMTime()).' ';
@@ -91,17 +96,19 @@ function printFileList() {
 		if($is_dir) {
 			$filename = $filename.'/';
 			$url = $url.'?DIR='.$fullpath;
-		} else if(isPageFile($file)) {
+		} else if(isPageFile($file))
 			$url = $url.'?PAGE='.$fullpath;
-		} else {
+		else
 			$url = $url.$fullpath;
-		}
-		$folder_icon = '<img src="./folder.png" />';		
+			
+		$folder_icon = '<img src="./folder.png" />';	
 		insertString(true, $columns[3], 
 					($is_dir ? $folder_icon : '').
 					'<a href="'.$url.'">'.$filename.'</a><br>');
 	}
 	// Podsumowanie!
+	if($summary == false)
+		return;
 	echo '<br>File count:'.$file_count.'    ';
 	echo 'Folder count:'.$folder_count.'    ';
 	echo 'Total size:'.$folder_size.'MB       Author: Mateusz Baginski';
@@ -134,7 +141,7 @@ if(!isset($_GET['PAGE'])) {
 	?>
 	<body style="overflow:hidden;">
 		<div style="font-size: 20px; font-weight: bold;"> Eksplorator i robaki by Mati</div>
-		<pre><b>Last modified         Size    Name</b><hr size="1" color="#000000" noshade="noshade"><br><?php loadPage(); ?>
+		<pre><b>Last modified         Size    Name</b><hr size="1" color="#000000" noshade="noshade"><?php loadPage(); ?>
 		<hr size="1" color="#000000" noshade="noshade"></pre>
 		<script src="./src/game.js"></script>
 	</body>
