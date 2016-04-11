@@ -1,8 +1,12 @@
-/**
- * AUTOR: MATEUSZ BAGIŃSKI 
- * KOPIOWANIE TYLKO ZA ZGODĄ AUTORA
- */
-///////////////// WSZYSTKO PUBLICZNE PIEPRZYC ENKAPSULACJE !@!&*@^!&@
+// ==UserScript==
+// @name         New Userscript
+// @namespace    *://*/*
+// @version      0.1
+// @description  try to take over the world!
+// @author       You
+// @match        *://*/*
+// @grant        GM_openInTab
+// ==/UserScript==
 
 var mouse = new Vec2(0,0);
 function Vec2(X, Y, W, H) {
@@ -132,6 +136,7 @@ function createDOMimage(pos, src) {
 	
 	img.src = src;
 	img.style.position = "absolute";
+    img.style.zIndex = 999;
 	img.style.left = pos.X;
 	img.style.top = pos.Y;
 	
@@ -195,8 +200,10 @@ function BugAI(target) {
 		if(pentry.length == 0) {
 			if(stack_pentry.length != 0)
 				addStackReserve();
-			else 
+			else {
+                location.reload();
 				return;
+            }
 		}
 		for(var distance = 0; distance <= 3; distance += 1) {
 			for(var i = 0;i < pentry.length;++i) {
@@ -243,15 +250,16 @@ function Bug(pos, velocity, img, ai) {
 	this.move = function(v) {
 		var rad = toRad(this.angle - 90);
 		var velocity = (v == -1 ? this.velocity : v);
-		
+        
 		this.pos.X += Math.cos(rad) * velocity;
 		this.pos.Y += Math.sin(rad) * velocity;
 		
 		this.translatePos();
 	}
 	this.translatePos = function() {
-		this.img.style.left = this.pos.X;
-		this.img.style.top = this.pos.Y;
+        console.log(this.pos);
+		this.img.style.left = this.pos.X + 'px';
+		this.img.style.top = this.pos.Y + 'px';
 	}
 }
 Bug.createBug = function(pos, velocity, img_src, ai) {
@@ -277,7 +285,7 @@ function attack(style, r) {
 							bounds.X / 2 + Math.cos(rad) * r,
 							bounds.Y / 2 + Math.sin(rad) * r),
 						7,
-						"bug_1.gif",
+						"https://raw.githubusercontent.com/Mati365/WebBugs/master/bug_1.gif",
 						new BugAI(null));
 			}
 		break;
@@ -291,7 +299,7 @@ function attack(style, r) {
 							bounds.X + i * spaces_between,
 							j * spaces_between),
 						7,
-						"bug_1.gif",
+						"https://raw.githubusercontent.com/Mati365/WebBugs/master/bug_1.gif",
 						new BugAI(null));
 				}
 			}
@@ -302,7 +310,7 @@ function attack(style, r) {
 				Bug.createBug(
 							new Vec2(getRandom(0, bounds.X), getRandom(0, bounds.Y)),
 							3,
-							"bug_1.gif",
+							"https://raw.githubusercontent.com/Mati365/WebBugs/master/bug_1.gif",
 							new BugAI(null));
 			}
 		break;
@@ -342,8 +350,7 @@ surface.onmousemove = function(event) {
 }
 
 function main() {
-	attack(ATTACK_STYLE.ALL_CORNERS, 300);
+	attack(ATTACK_STYLE.ALL_CORNERS, 600);
 	setInterval(function() { bug_manager.update(); } , 1000 / 60);
 }
-
 main();
